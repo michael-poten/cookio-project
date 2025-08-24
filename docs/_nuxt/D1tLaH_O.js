@@ -1,1 +1,0 @@
-import{Z as i,_ as c,n as o,$ as r}from"./C4gNfbci.js";const l=i("recipe",{state:()=>c({recipes:[]}),actions:{getAllRecipes:async function(p){try{let e=o().public.apiBase,s=null;e="https://mmhhhh.de/data/home/recipes.json",s=(await r.get(e)).data;const t=[];for(const[u,a]of Object.entries(s))t.push(a);return this.$patch({recipes:t}),t}catch(e){r.catchError(e)}}}});export{l as u};
