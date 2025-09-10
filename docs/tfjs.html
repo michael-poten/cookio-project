@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Speech Commands iFrame</title>
+
+  <!-- TensorFlow.js — ggf. Version anpassen; 4.x ist üblich -->
+  <!-- Falls es bei dir mit 4.x haken sollte, teste 3.21.0:
+       https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.21.0/dist/tf.min.js -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+
+  <!-- Speech Commands (0.5.4 ist die aktuelle Paketversion) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands@0.5.4/dist/speech-commands.min.js"></script>
+
+  <style>
+    html,body{margin:0;font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{padding:16px}
+    .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    button{padding:10px 14px;border-radius:10px;border:1px solid #ddd;cursor:pointer}
+    #status{font-size:14px;color:#555}
+    .tag{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid #ddd;margin-right:6px}
+    #top{font-size:20px;font-weight:600;margin-top:8px}
+    pre{background:#f6f6f6;padding:10px;border-radius:8px;overflow:auto}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="row">
+    <button id="btnStart">Start</button>
+    <button id="btnStop" disabled>Stop</button>
+    <span id="status">Lade Modell…</span>
+  </div>
+
+  <div style="margin-top:12px">
+    <div>Aktuelles Top-Wort: <span id="top" class="tag">–</span></div>
+    <details style="margin-top:8px">
+      <summary>Scores (alle Wörter)</summary>
+      <pre id="scores">[]</pre>
+    </details>
+  </div>
+</div>
+
+<script>
+  // Basis-Parameter – bei Bedarf anpassen:
+  const PROBABILITY_THRESHOLD = 0.75;  // nur Events, wenn Top-Score >= Threshold
+  const VOCAB = '18w'; // Standard-Wortschatz („zero“…„nine“, „up/down/…“, „yes/no“) :contentReference[oaicite:1]{index=1}
+
+  let recognizer, listening = false, words = [];
+
+  const $status = document.getElementById('status');
+  const $btnStart = document.getElementById('btnStart');
+  const $btnStop  = document.getElementById('btnStop');
+  const $top      = document.getElementById('top');
+  const $scores   = document.getElementById('scores');
+
+  // Sicherheitsnetz: getUserMedia nur in sicheren Contexts (HTTPS/localhost) verfügbar. :contentReference[oaicite:2]{index=2}
+  if (!('mediaDevices' in navigator)) {
+    $status.textContent = 'Kein navigator.mediaDevices – sichere Umgebung (HTTPS/localhost) erforderlich.';
+  }
+
+  async function init() {
+    // API: create('BROWSER_FFT') + ensureModelLoaded() + wordLabels() :contentReference[oaicite:3]{index=3}
+    recognizer = speechCommands.create('BROWSER_FFT', VOCAB);
+    await recognizer.ensureModelLoaded();
+    words = recognizer.wordLabels();
+    // words = ['one', 'no', 'go', 'eight', 'nine', 'stop', 'yes']
+    // Good Words (sorted): one, no/go, eight, nine, stop, yes
+    $status.textContent = `Bereit. Wörter: ${words.length}`;
+    // Parent informieren, dass das iFrame bereit ist
+    window.parent?.postMessage({ type: 'speech-commands:ready', vocab: words }, '*');
+  }
+
+  function startListening() {
+    if (listening) return;
+    recognizer.listen(onResult, {
+      overlapFactor: 0.5,
+      includeSpectrogram: false,
+      probabilityThreshold: PROBABILITY_THRESHOLD,
+      invokeCallbackOnNoiseAndUnknown: false
+    }); // listen() Callback + Parameter siehe Doku. :contentReference[oaicite:4]{index=4}
+    listening = true;
+    $status.textContent = 'Hört zu… (Mikrofon aktiv)';
+    $btnStart.disabled = true;
+    $btnStop.disabled = false;
+  }
+
+  function stopListening() {
+    if (!listening) return;
+    recognizer.stopListening();
+    listening = false;
+    $status.textContent = 'Gestoppt.';
+    $btnStart.disabled = false;
+    $btnStop.disabled = true;
+  }
+
+  function onResult(result) {
+    // result.scores entspricht recognizer.wordLabels() in gleicher Reihenfolge. :contentReference[oaicite:5]{index=5}
+    const scores = Array.from(result.scores);
+    const labeled = words.map((w, i) => ({ label: w, score: scores[i] }));
+    labeled.sort((a,b) => b.score - a.score);
+    console.log('labeled', labeled);
+    const top = labeled[0];
+
+    // UI aktualisieren
+    $top.textContent = `${top.label} (${top.score.toFixed(2)})`;
+    $scores.textContent = JSON.stringify(labeled, null, 2);
+
+    // Alles an den Parent schicken (Top + vollständige Scoreliste)
+    window.parent?.postMessage({
+      type: 'speech-commands:result',
+      timestamp: Date.now(),
+      threshold: PROBABILITY_THRESHOLD,
+      vocab: words,
+      top,
+      scores: labeled
+    }, '*'); // In Produktion: origin einschränken!
+  }
+
+  // Parent -> iFrame Steuerung (optional)
+  window.addEventListener('message', (ev) => {
+    const msg = ev.data;
+    if (!msg || msg.type !== 'speech-commands:control') return;
+    if (msg.action === 'start') startListening();
+    if (msg.action === 'stop')  stopListening();
+  });
+
+  $btnStart.addEventListener('click', startListening);
+  $btnStop.addEventListener('click', stopListening);
+
+  init().catch(err => {
+    console.error(err);
+    $status.textContent = 'Fehler beim Laden des Modells (Details in Konsole).';
+  });
+</script>
+</body>
+</html>
