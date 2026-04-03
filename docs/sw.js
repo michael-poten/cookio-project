@@ -18,5 +18,14 @@ self.addEventListener('fetch', (event) => {
 
       return Response.redirect('/?shared=1', 303);
     })());
+    return;
+  }
+
+  // Für Navigation-Requests: Network-first, dann Offline-Fallback
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).catch(() => caches.match('/') || new Response('Offline', { status: 503 }))
+    );
+    return;
   }
 });
