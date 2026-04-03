@@ -21,11 +21,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Für Navigation-Requests: Network-first, dann Offline-Fallback
+  // API-Calls nicht intercepten
+  if (url.pathname.startsWith('/api')) return;
+
+  // Für Navigation-Requests: immer ans Netzwerk
   if (event.request.mode === 'navigate') {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match('/') || new Response('Offline', { status: 503 }))
-    );
+    event.respondWith(fetch(event.request));
     return;
   }
 });
