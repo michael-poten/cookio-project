@@ -1,0 +1,1 @@
+import{N as s,I as t,o as a,x as c,P as n}from"./_XSYT-na.js";import{M as u}from"./DnoNHr8e.js";import"./DrZqPBK-.js";const l={__name:"index",setup(p){const e=s(),o=t(),r=e.query.id;return a(async()=>{r||o.push("/recipes")}),(i,_)=>(c(),n(u))}};export{l as default};
