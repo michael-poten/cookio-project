@@ -1,1 +1,0 @@
-import{N as s,I as t,o as a,x as c,P as n}from"./BwMXvZ1-.js";import{M as u}from"./DxBl-J_Q.js";import"./6tvgwdQA.js";const l={__name:"index",setup(p){const e=s(),o=t(),r=e.query.id;return a(async()=>{r||o.push("/recipes")}),(i,_)=>(c(),n(u))}};export{l as default};
