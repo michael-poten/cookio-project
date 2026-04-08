@@ -1,0 +1,1 @@
+import{R as o}from"./xFZhzv0t.js";import{M as t,u as a,W as r,J as n,L as u,o as c,x as i,P as p}from"./CSo60Ri1.js";import"./BBqj3thR.js";import"./BMmijCyB.js";import"./BNmSOaiJ.js";const M={__name:"index",setup(m){t(),a(),r();const e=n(),{shuffleMode:s}=u(e);return c(async()=>{s.value=!1}),(f,_)=>(i(),p(o))}};export{M as default};
