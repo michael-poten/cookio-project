@@ -1,0 +1,1 @@
+import{P as a,I as r,o as t,x as c,N as n,aa as u}from"./CLHIpHuW.js";const f={__name:"index",setup(p){const e=a(),s=r(),o=e.query.id;return t(async()=>{o||s.push("/recipes")}),(_,i)=>(c(),n(u))}};export{f as default};
